@@ -1,12 +1,12 @@
 // dummy image 
-#include <image_gpu.h>
+#include "image_gpu.h"
 #include <cuda_runtime.h>
 
 
 // TBD REF
-static unsigned long long g_imgSrc = 0L;
-static unsigned long long g_imgDst = 0L;
-static unsigned long long g_imgAux = 0L;
+static void* g_imgSrc = nullptr;
+static void* g_imgDst = nullptr;
+static void* g_imgAux = nullptr;
 
 
 // TBD REF, use context
@@ -104,7 +104,7 @@ bool cudaBlur( unsigned char* pImageDst, int nWidth, int nHeight)
     
     bRet = true;
     // save data
-    cudaError_t error_id = cudaMemcpy( pImageDst, g_imgDst, nWidth * nHeight, cudaMemcpyDeviceToHost );
+    cudaError_t error_id = cudaMemcpy( (void*)pImageDst, g_imgDst, nWidth * nHeight, cudaMemcpyDeviceToHost );
 
     return bRet;
 }

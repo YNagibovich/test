@@ -238,7 +238,7 @@ bool CImage::toGrayscale( int nThreads)
         }
     }
 
-    if( is_GPU_OK())
+    if( isGPU_OK())
     {
         bRet = cudaGrayscale( m_pRawData, m_nWidth, m_nHeight);
     }
@@ -304,7 +304,7 @@ bool CImage::blur( int nThreads)
 {
     bool bRet = false;
 
-    if( is_GPU_OK())
+    if( isGPU_OK())
     {
         bRet = cudaBlur( m_pProcessedData, m_nWidth, m_nHeight);
     }

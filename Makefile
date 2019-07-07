@@ -3,19 +3,23 @@ TARGET   = program
 #MODE=DEBUG
 MODE=RELEASE
 
+CUDAINC = /usr/local/cuda-10.1/targets/x86_64-linux/include
+CUDALIB = /usr/local/cuda-10.1/targets/x86_64-linux/lib
+
+
 BUILDDATE := $(shell date +%d%m%Y)
 
 ifeq ($(MODE),DEBUG)
-CFLAGS   = -std=c++11 -Wall -I./include -g3 -ggdb -DDEBUG -DBUILDDATE=\"$(BUILDDATE)\" 
+CFLAGS   = -std=c++11 -Wall -I./include -I$(CUDAINC) -g3 -ggdb -DDEBUG -DBUILDDATE=\"$(BUILDDATE)\" 
 else
-CFLAGS   = -std=c++11 -Wall -I./include -O1 -ggdb -DNDEBUG -DBUILDDATE=\"$(BUILDDATE)\"
+CFLAGS   = -std=c++11 -Wall -I./include -I$(CUDAINC) -O1 -ggdb -DNDEBUG -DBUILDDATE=\"$(BUILDDATE)\"
 endif
 
 CC       = gcc
 
 LINKER   = gcc
 
-LFLAGS   = -Wall -I. -lm -lstdc++ -L./lib/ -ldl -lturbojpeg -lpthread
+LFLAGS   = -Wall -I. -lm -lstdc++ -L./lib/ -L$(CUDALIB) -ldl -lturbojpeg -lpthread -lcudart
 
 SRCDIR   = src
 OBJDIR   = obj
