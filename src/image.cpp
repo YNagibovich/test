@@ -11,7 +11,7 @@
 #include "turbojpeg.h"
 
 CImage::CImage( int nTotal) : m_pRawData(nullptr), m_pProcessedData(nullptr),
-m_pAuxData(nullptr),m_nWidth(0), m_nHeight(0), m_bGPU(false)
+m_pAuxData(nullptr),m_nWidth(0), m_nHeight(0), m_bGPU(false), m_pMatrix(nullptr)         
 {
     m_nTotalThreads = nTotal;
 
@@ -33,6 +33,11 @@ CImage::~CImage()
     if( m_pAuxData != nullptr)
     {
         delete [] m_pAuxData;
+    }
+
+    if( m_pMatrix)
+    {
+        delete [] m_pMatrix;
     }
 
     if( m_bGPU)
@@ -300,13 +305,59 @@ bool CImage::_toGrayscale( int nOrder)
     return bRet;
 }    
 
+bool CImage::createMatrix( int nParam)
+{
+    const float fSigma = 2.0;
+
+    if( m_pMatrix == nullptr)
+    {
+        try
+        {
+            m_pMatrix = new float[nParam * nParam];
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return false;
+        }
+    }
+
+    float fSum = 0.0f; 
+
+    for (int r = -nParam/2; r <= nParam/2; ++r) 
+    {
+        for (int c = -nParam/2; c <= nParam/2; ++c) 
+        {
+            float fValue = expf( -(float)(c * c + r * r) / (2.0f * fSigma * fSigma));
+            (*m_pMatrix)[(r + nParam/2) * nParam + c + nParam/2] = fValue;
+            fSum += fValue;
+        }
+    }
+
+    float fFactor = 1.0f / fSum;
+
+    for (int r = -nParam/2; r <= nParam/2; ++r) 
+    {
+        for (int c = -nParam/2; c <= nParam/2; ++c) 
+        {
+            (*m_pMatrix)[(r + nParam/2) * nParam + c + nParam/2] *= fFactor;
+        }
+    }
+
+    return true;
+}
+
 bool CImage::blur( int nThreads)
 {
     bool bRet = false;
 
     if( isGPU_OK())
     {
-        bRet = cudaBlur( m_pProcessedData, m_nWidth, m_nHeight);
+        int nParam  = 5;
+        if( createMatrix(nParam))
+        {
+            bRet = cudaBlur( m_pProcessedData, m_nWidth, m_nHeight, m_pMatrix, nParam);
+        }
     }
     else
     {

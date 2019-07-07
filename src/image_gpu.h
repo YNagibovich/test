@@ -6,9 +6,9 @@
 
 bool isCUDA_OK();
 
-bool cudaGrayscale( unsigned char* pImageSrc, int nWidth, int nHeight);
+bool cudaGrayscale( const unsigned char* pImageSrc, int nWidth, int nHeight);
 
-bool cudaBlur( unsigned char* pImageDst, int nWidth, int nHeight);
+bool cudaBlur( unsigned char* pImageDst, int nWidth, int nHeight, const float* pMatrix, int nParam);
 
 bool cudaClose();
 

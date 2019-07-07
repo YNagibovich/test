@@ -25,6 +25,7 @@ public:
 private:
 
     bool isGPU_OK();
+    bool createMatrix( int nParam);
 
     // rgba->gray
     bool _toGrayscale( int nOrder);
@@ -40,6 +41,7 @@ private:
     unsigned char* m_pRawData;
     unsigned char* m_pProcessedData;
     unsigned char* m_pAuxData;;
+    float* m_pMatrix;         
     int m_nWidth;
     int m_nHeight;
     int m_nTotalThreads;
