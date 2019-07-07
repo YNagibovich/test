@@ -6,13 +6,16 @@
 #include <cmath>
 #include <fstream>
 #include "image.h"
+#include "image_gpu.h"
 
 #include "turbojpeg.h"
 
 CImage::CImage( int nTotal) : m_pRawData(nullptr), m_pProcessedData(nullptr),
-m_pAuxData(nullptr),m_nWidth(0), m_nHeight(0)
+m_pAuxData(nullptr),m_nWidth(0), m_nHeight(0), m_bGPU(false)
 {
     m_nTotalThreads = nTotal;
+
+    m_bGPU = isGPU_OK();
 }
 
 CImage::~CImage()
@@ -31,6 +34,21 @@ CImage::~CImage()
     {
         delete [] m_pAuxData;
     }
+
+    if( m_bGPU)
+    {
+        cudaClose();
+    }
+}
+
+bool CImage::isGPU_OK()
+{
+    if( !m_bGPU)
+    {
+        m_bGPU = isCUDA_OK();
+    }
+
+    return m_bGPU;
 }
 
 // jpeg only 
@@ -206,6 +224,7 @@ unsigned char* CImage::getAuxOffset( int nOrder)
 bool CImage::toGrayscale( int nThreads)
 {
     bool bRet = false;
+
     if( m_pProcessedData == nullptr)
     {
         try
@@ -214,26 +233,34 @@ bool CImage::toGrayscale( int nThreads)
         }
         catch(const std::exception& e)
         {
-            std::cerr << e.what() << '\n';
-            return bRet;
+                std::cerr << e.what() << '\n';
+                return bRet;
         }
     }
-    bRet = true;
-    std::vector<std::thread> vWorkers;
 
-    for (int i=0; i<nThreads; i++)
+    if( is_GPU_OK())
     {
-        std::thread tWorker;
-                
-        tWorker = std::thread(&CImage::_toGrayscale, this, i);
-        vWorkers.push_back(std::move(tWorker));
+        bRet = cudaGrayscale( m_pRawData, m_nWidth, m_nHeight);
     }
-
-    for ( std::thread& it : vWorkers)
+    else
     {
-        if( it.joinable())
+        bRet = true;
+        std::vector<std::thread> vWorkers;
+
+        for (int i=0; i<nThreads; i++)
         {
-            it.join();
+            std::thread tWorker;
+                
+            tWorker = std::thread(&CImage::_toGrayscale, this, i);
+            vWorkers.push_back(std::move(tWorker));
+        }
+        
+        for ( std::thread& it : vWorkers)
+        {
+            if( it.joinable())
+            {
+                it.join();
+            }
         }
     }
     return bRet;
@@ -277,32 +304,39 @@ bool CImage::blur( int nThreads)
 {
     bool bRet = false;
 
-    try
+    if( is_GPU_OK())
     {
-        m_pAuxData = new unsigned char[m_nWidth * m_nHeight]; 
+        bRet = cudaBlur( m_pProcessedData, m_nWidth, m_nHeight);
     }
-    catch(const std::exception& e)
+    else
     {
-        std::cerr << e.what() << '\n';
-        return bRet;
-    }
-
-    bRet = true;
-    std::vector<std::thread> vWorkers;
-
-    for (int i=0; i<nThreads; i++)
-    {
-        std::thread tWorker;
-                
-        tWorker = std::thread(&CImage::_blur, this, i);
-        vWorkers.push_back(std::move(tWorker));
-    }
-
-    for ( std::thread& it : vWorkers)
-    {
-        if( it.joinable())
+        try
         {
-            it.join();
+            m_pAuxData = new unsigned char[m_nWidth * m_nHeight]; 
+        }
+        catch(const std::exception& e)
+        {
+            std::cerr << e.what() << '\n';
+            return bRet;
+        }
+
+        bRet = true;
+        std::vector<std::thread> vWorkers;
+
+        for (int i=0; i<nThreads; i++)
+        {
+            std::thread tWorker;
+                
+            tWorker = std::thread(&CImage::_blur, this, i);
+            vWorkers.push_back(std::move(tWorker));
+        }
+
+        for ( std::thread& it : vWorkers)
+        {
+            if( it.joinable())
+            {
+                it.join();
+            }
         }
     }
     return bRet;

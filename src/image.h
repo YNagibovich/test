@@ -1,4 +1,9 @@
 // dummy image 
+#ifndef _DUMMY_IMAGE_H_
+#define _DUMMY_IMAGE_H_
+
+#include "image_gpu.h"
+
 class CImage 
 {
 public:
@@ -19,6 +24,8 @@ public:
 
 private:
 
+    bool isGPU_OK();
+
     // rgba->gray
     bool _toGrayscale( int nOrder);
 
@@ -36,6 +43,9 @@ private:
     int m_nWidth;
     int m_nHeight;
     int m_nTotalThreads;
+    bool m_bGPU;
 };
 
 #define DEF_QUALITY 100
+
+#endif // _DUMMY_IMAGE_H_
