@@ -2,7 +2,12 @@
 #ifndef _DUMMY_IMAGE_H_
 #define _DUMMY_IMAGE_H_
 
+#ifndef NOCUDA
+
 #include "image_gpu.h"
+
+#endif
+
 
 class CImage 
 {

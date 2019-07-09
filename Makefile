@@ -10,9 +10,9 @@ CUDALIB = /usr/local/cuda-10.1/targets/x86_64-linux/lib
 BUILDDATE := $(shell date +%d%m%Y)
 
 ifeq ($(MODE),DEBUG)
-CFLAGS   = -std=c++11 -Wall -I./include -I$(CUDAINC) -g3 -ggdb -DDEBUG -DBUILDDATE=\"$(BUILDDATE)\" 
+CFLAGS   = -std=c++11 -Wall -I./include -I$(CUDAINC) -g3 -ggdb -DDEBUG -DBUILDDATE=\"$(BUILDDATE)\" -DNOCUDA
 else
-CFLAGS   = -std=c++11 -Wall -I./include -I$(CUDAINC) -O1 -ggdb -DNDEBUG -DBUILDDATE=\"$(BUILDDATE)\"
+CFLAGS   = -std=c++11 -Wall -I./include -I$(CUDAINC) -O1 -ggdb -DNDEBUG -DBUILDDATE=\"$(BUILDDATE)\" -DNOCUDA
 endif
 
 CC       = gcc
@@ -30,7 +30,7 @@ INCLUDES := $(wildcard $(SRCDIR)/*.h)
 OBJECTS  := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
 rm       = rm -f
 
-$(BINDIR)/$(TARGET): $(OBJECTS)
+$(BINDIR)/$(TARGET):$(OBJECTS)
 	@$(LINKER) $(OBJECTS) $(LFLAGS) -o $@
 	@echo "Linking complete!"
 
@@ -38,12 +38,11 @@ $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.cpp
 	@$(CC) $(CFLAGS) -c $< -o $@
 	@echo "Compiled "$<" successfully!"
 
-.PHONY: clean
 clean:
 	@$(rm) $(OBJECTS)
 	@echo "Cleanup complete!"
 
-.PHONY: remove
+.PHONY: all
 remove: clean
 	@$(rm) $(BINDIR)/$(TARGET)
 	@echo "Executable removed!"

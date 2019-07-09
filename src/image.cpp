@@ -11,9 +11,11 @@
 #include "turbojpeg.h"
 
 CImage::CImage( int nTotal) : m_pRawData(nullptr), m_pProcessedData(nullptr),
-m_pAuxData(nullptr),m_nWidth(0), m_nHeight(0), m_bGPU(false), m_pMatrix(nullptr)         
+m_pAuxData(nullptr), m_pMatrix(nullptr)         
 {
     m_nTotalThreads = nTotal;
+    m_nHeight = 0;
+    m_nWidth = 0;
 
     m_bGPU = isGPU_OK();
 }
@@ -42,17 +44,23 @@ CImage::~CImage()
 
     if( m_bGPU)
     {
+
+#ifndef NOCUDA
         cudaClose();
+#endif        
     }
 }
 
 bool CImage::isGPU_OK()
 {
+ #ifdef NOCUDA
+     m_bGPU = false;
+ #else
     if( !m_bGPU)
     {
         m_bGPU = isCUDA_OK();
     }
-
+#endif
     return m_bGPU;
 }
 
@@ -245,7 +253,9 @@ bool CImage::toGrayscale( int nThreads)
 
     if( isGPU_OK())
     {
+#ifndef NOCUDA        
         bRet = cudaGrayscale( m_pRawData, m_nWidth, m_nHeight);
+#endif        
     }
     else
     {
@@ -298,7 +308,7 @@ bool CImage::_toGrayscale( int nOrder)
             float dVal = 0.299 * dR + 0.587 * dG + 0.114 * dB;
 
             *pDst++ =( dVal > 255 ? 255 : (uint8_t) dVal);
-            *pSrc++;
+            pSrc += 1;
         }
     }
 
@@ -329,7 +339,7 @@ bool CImage::createMatrix( int nParam)
         for (int c = -nParam/2; c <= nParam/2; ++c) 
         {
             float fValue = expf( -(float)(c * c + r * r) / (2.0f * fSigma * fSigma));
-            (*m_pMatrix)[(r + nParam/2) * nParam + c + nParam/2] = fValue;
+            m_pMatrix[(r + nParam/2) * nParam + c + nParam/2] = fValue;
             fSum += fValue;
         }
     }
@@ -340,7 +350,7 @@ bool CImage::createMatrix( int nParam)
     {
         for (int c = -nParam/2; c <= nParam/2; ++c) 
         {
-            (*m_pMatrix)[(r + nParam/2) * nParam + c + nParam/2] *= fFactor;
+            m_pMatrix[(r + nParam/2) * nParam + c + nParam/2] *= fFactor;
         }
     }
 
@@ -353,11 +363,13 @@ bool CImage::blur( int nThreads)
 
     if( isGPU_OK())
     {
+#ifndef NOCUDA        
         int nParam  = 5;
         if( createMatrix(nParam))
         {
             bRet = cudaBlur( m_pProcessedData, m_nWidth, m_nHeight, m_pMatrix, nParam);
         }
+#endif        
     }
     else
     {
